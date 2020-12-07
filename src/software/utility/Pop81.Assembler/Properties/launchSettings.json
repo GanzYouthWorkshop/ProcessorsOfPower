@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Pop81.Assembler": {
+      "commandName": "Project",
+      "commandLineArgs": "..\\..\\..\\..\\test.asm"
+    }
+  }
+}
