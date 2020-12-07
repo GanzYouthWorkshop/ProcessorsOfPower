@@ -1,0 +1,10 @@
+﻿src/software/utility/.vs
+src/software/utility/Pop.CompilerApi/bin
+src/software/utility/Pop.CompilerApi/obj
+src/software/utility/Pop81/bin
+src/software/utility/Pop81/obj
+src/software/utility/Pop81.Assembler/bin
+src/software/utility/Pop81.VM/bin
+src/software/utility/Pop81.Assembler/obj
+src/software/utility/Pop81.VM/obj
+src/software/utility/test.asm.bin
