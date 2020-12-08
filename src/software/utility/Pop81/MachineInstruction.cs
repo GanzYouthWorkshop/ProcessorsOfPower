@@ -17,7 +17,7 @@ namespace Pop81
         [FieldOffset(1)] public byte TargetRegister;
 
         [FieldOffset(2)] public byte Source;
-        [FieldOffset(1)] public byte SourceRegister;
+        [FieldOffset(2)] public byte SourceRegister;
         [FieldOffset(2)] public ushort Literal;
 
         [FieldOffset(0)] public byte Byte1;

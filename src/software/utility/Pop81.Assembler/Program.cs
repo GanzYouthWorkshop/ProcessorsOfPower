@@ -42,6 +42,11 @@ namespace Pop81.Assembler
                 List<Token<TokenTypes>> output = tokenizer.Run(assemblyFile);
                 List<Token<TokenTypes>> escapedOutput = tokenizer.RemoveTokenTypes(output, TokenTypes.Comment, TokenTypes.Whitespace, TokenTypes.NewLine);
 
+                if(tokenizer.IsVerbose)
+                {
+                    tokenizer.ListTokens(escapedOutput);
+                }
+
                 Assembler asm = new Assembler()
                 {
                     IsVerbose = true

@@ -47,8 +47,8 @@ namespace Pop81.Assembler
                     {
                         TokenDefinitions = new List<TokenDefinition<TokenTypes>>()
                         {
-                            new TokenDefinition<TokenTypes>(TokenTypes.Instruction, new Regex(@"^(?!;).+$", RegexOptions.Multiline), true),
-                            new TokenDefinition<TokenTypes>(TokenTypes.NewLine, new Regex(@"[\n|\r\n]+"), true),
+                            new TokenDefinition<TokenTypes>(TokenTypes.Instruction, new Regex(@"^(?!;).+$", RegexOptions.Multiline), 99),
+                            new TokenDefinition<TokenTypes>(TokenTypes.NewLine, new Regex(@"[\n|\r\n]+")),
 
                             new TokenDefinition<TokenTypes>(TokenTypes.Comment, new Regex(@";.*$")),
                             new TokenDefinition<TokenTypes>(TokenTypes.Whitespace, new Regex(@"\s+")),
@@ -58,7 +58,7 @@ namespace Pop81.Assembler
 
                             new TokenDefinition<TokenTypes>(TokenTypes.Label, new Regex(@"[a-zA-Z]+\:")),
 
-                            new TokenDefinition<TokenTypes>(TokenTypes.IndirectAddressing, new Regex(@"\[[a-z0-9\$]+\]"), true),
+                            new TokenDefinition<TokenTypes>(TokenTypes.IndirectAddressing, new Regex(@"\[[a-z0-9\$]+\]"), 1),
 
                             new TokenDefinition<TokenTypes>(TokenTypes.Register8, new Regex(@$"({registers8})", RegexOptions.IgnoreCase)),
                             new TokenDefinition<TokenTypes>(TokenTypes.Register16, new Regex(@$"({registers16})", RegexOptions.IgnoreCase)),
@@ -105,6 +105,24 @@ namespace Pop81.Assembler
             }
 
             return result;
+        }
+
+        public void ListTokens(List<Token<TokenTypes>> tokens, int indent = 0)
+        {
+            if (indent == 0)
+            {
+                Console.WriteLine("ROOT");
+            }
+
+            for(int i = 0; i < tokens.Count; i++)
+            {
+                char c = i == tokens.Count - 1 ? '└' : '├';
+                Console.WriteLine($"{new String('│', indent)}{c}\u001b[38;5;{Utils.INSTR_COLOR}m{tokens[i].TokenType} \u001b[38;5;{Utils.FROM_REG_COLOR}m{tokens[i].Value}\u001b[0m");
+                if(tokens[i].Tokens != null)
+                {
+                    this.ListTokens(tokens[i].Tokens, indent + 1);
+                }
+            }
         }
     }
 }
