@@ -1,5 +1,8 @@
 ﻿namespace Pop81
 {
+    /// <summary>
+    /// A POP81 processzor által használt gépi nyelv opkódjainak listája.
+    /// </summary>
     public enum OpCode : byte
     {
         //halt

@@ -7,7 +7,9 @@ using System.Text;
 
 namespace Pop81
 {
-    
+    /// <summary>
+    /// A POP81 processzor regiszterei.
+    /// </summary>
     public enum RegisterCodes : byte
     {
 
@@ -35,9 +37,24 @@ namespace Pop81
 
     public class Register
     {
+        /// <summary>
+        /// Egy 8 bites regisztert jelöl.
+        /// </summary>
         public const byte BITS8  = 0x00;
+
+        /// <summary>
+        /// Egy 16 bites regisztert jelöl.
+        /// </summary>
         public const byte BITS16 = 0x80;
+
+        /// <summary>
+        /// Egy általános célú regisztert jelöl.
+        /// </summary>
         public const byte GENERAL = 0x00;
+
+        /// <summary>
+        /// Egy specializált regisztert jelöl.
+        /// </summary>
         public const byte SPECIAL = 0x40;
 
         private ulong m_InternalValue = 0;

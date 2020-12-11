@@ -4,6 +4,9 @@ using System.Text;
 
 namespace Pop81
 {
+    /// <summary>
+    /// Kisegítő adatok és metódusok a POP81-hez.
+    /// </summary>
     public class Utils
     {
         public const int INSTR_COLOR = 204;
