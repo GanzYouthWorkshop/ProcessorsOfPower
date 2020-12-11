@@ -15,9 +15,33 @@ namespace Pop81.Assembler
         {
             if(args.Length > 0)
             {
-                string assemblyFile = File.ReadAllText(args[0]);
-                assemblyFile = assemblyFile.Replace("\r", "");
-                string[] lines = assemblyFile.Split("\n");
+                string assemblyFile = string.Empty;
+                bool verbose = false;
+                string outputFile = string.Empty;
+
+                for (int i = 0; i < args.Length; i++)
+                {
+                    if(i == 0)
+                    {
+                        assemblyFile = File.ReadAllText(args[0]);
+                        outputFile = args[0] + ".bin";
+                    }
+                    else
+                    {
+                        switch(args[i].ToLower())
+                        {
+                            case "--verbose":
+                                verbose = true;
+                                break;
+                            case "--output":
+                                if(args.Length > i)
+                                {
+                                    outputFile = args[i + 1];
+                                }
+                                break;
+                        }
+                    }
+                }
 
                 //for (int i = 0; i < 16; i++)
                 //{
@@ -28,19 +52,12 @@ namespace Pop81.Assembler
                 //    }
                 //}
 
-
-                //AssemblerOld asm = new AssemblerOld()
-                //{
-                //    IsVerbose = true,
-                //};
-                //asm.Run(lines);
-
                 Pop81AssemblyTokenizer tokenizer = new Pop81AssemblyTokenizer()
                 {
-                    IsVerbose = true
+                    IsVerbose = verbose
                 };
-                List<Token<TokenTypes>> output = tokenizer.Run(assemblyFile);
-                List<Token<TokenTypes>> escapedOutput = tokenizer.RemoveTokenTypes(output, TokenTypes.Comment, TokenTypes.Whitespace, TokenTypes.NewLine);
+                List<Token<TokenTypes>> outputTokens = tokenizer.Run(assemblyFile);
+                List<Token<TokenTypes>> escapedOutput = tokenizer.RemoveTokenTypes(outputTokens, TokenTypes.Comment, TokenTypes.Whitespace, TokenTypes.NewLine);
 
                 if(tokenizer.IsVerbose)
                 {
@@ -49,15 +66,13 @@ namespace Pop81.Assembler
 
                 Assembler asm = new Assembler()
                 {
-                    IsVerbose = true
+                    IsVerbose = verbose
                 };
                 asm.Run(escapedOutput);
 
-
-
                 if (true)//asm.Erros == 0)
                 {
-                    File.WriteAllBytes(args[0] + ".bin", asm.Binary.ToArray());
+                    File.WriteAllBytes(outputFile, asm.Binary.ToArray());
                 }
             }
         }        

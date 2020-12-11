@@ -19,6 +19,8 @@ namespace Pop81.Assembler
             #region 1. futás - direktívák és címkék
             int addresses = 0;
 
+            List<Token<TokenTypes>> escapedTokens = new List<Token<TokenTypes>>();
+
             foreach (Token<TokenTypes> token in tokens)
             {
                 if (token.TokenType == TokenTypes.Instruction)
@@ -45,7 +47,83 @@ namespace Pop81.Assembler
                                 break;
 
                             case TokenTypes.Opcode:
-                                addresses += 4;
+                                List<Token<TokenTypes>> newInstructions = new List<Token<TokenTypes>>();
+
+                                if (token.Tokens.Count > 1 && token.Tokens[1].TokenType == TokenTypes.IndirectAddressing)                          
+                                {
+                                    newInstructions = new List<Token<TokenTypes>>()
+                                    {
+                                        new Token<TokenTypes>()
+                                        {
+                                            TokenType = TokenTypes.Instruction,
+                                            Tokens = new List<Token<TokenTypes>>()
+                                            {
+                                                new Token<TokenTypes>(){ TokenType = TokenTypes.Opcode, Value = "MOVE" },
+                                                new Token<TokenTypes>(){ TokenType = TokenTypes.Register8, Value = "md" },
+                                                token.Tokens[2],
+                                            }
+                                        },
+                                        new Token<TokenTypes>()
+                                        {
+                                            TokenType = TokenTypes.Instruction,
+                                            Tokens = new List<Token<TokenTypes>>()
+                                            {
+                                                new Token<TokenTypes>(){ TokenType = TokenTypes.Opcode, Value = "MOVE" },
+                                                new Token<TokenTypes>(){ TokenType = TokenTypes.Register16, Value = "ma" },
+                                                token.Tokens[1].Tokens[0],
+                                            }
+                                        },
+                                        new Token<TokenTypes>()
+                                        {
+                                            TokenType = TokenTypes.Instruction,
+                                            Tokens = new List<Token<TokenTypes>>()
+                                            {
+                                                new Token<TokenTypes>(){ TokenType = TokenTypes.Opcode, Value = "SAVE" },
+                                            }
+                                        },
+                                    };
+                                }
+                                else if((token.Tokens.Count > 2 && token.Tokens[2].TokenType == TokenTypes.IndirectAddressing))
+                                {
+                                    newInstructions = new List<Token<TokenTypes>>()
+                                    {
+                                        new Token<TokenTypes>()
+                                        {
+                                            TokenType = TokenTypes.Instruction,
+                                            Tokens = new List<Token<TokenTypes>>()
+                                            {
+                                                new Token<TokenTypes>(){ TokenType = TokenTypes.Opcode, Value = "MOVE" },
+                                                new Token<TokenTypes>(){ TokenType = TokenTypes.Register16, Value = "ma" },
+                                                token.Tokens[2].Tokens[0]
+                                            }
+                                        },
+                                        new Token<TokenTypes>()
+                                        {
+                                            TokenType = TokenTypes.Instruction,
+                                            Tokens = new List<Token<TokenTypes>>()
+                                            {
+                                                new Token<TokenTypes>(){ TokenType = TokenTypes.Opcode, Value = "LOAD" },
+                                            }
+                                        },
+                                        new Token<TokenTypes>()
+                                        {
+                                            TokenType = TokenTypes.Instruction,
+                                            Tokens = new List<Token<TokenTypes>>()
+                                            {
+                                                new Token<TokenTypes>(){ TokenType = TokenTypes.Opcode, Value = "MOVE" },
+                                                token.Tokens[1],
+                                                new Token<TokenTypes>(){ TokenType = TokenTypes.Register8, Value = "md" },
+                                            }
+                                        },
+                                    };
+                                }
+                                else
+                                {
+                                    newInstructions.Add(token);
+                                }
+
+                                escapedTokens.AddRange(newInstructions);
+                                addresses = escapedTokens.Count * 4;
                                 break;
                         }
                     }
@@ -56,9 +134,9 @@ namespace Pop81.Assembler
             #region 2. futás - utasítások
             addresses = 0;
 
-            foreach (Token<TokenTypes> token in tokens)
+            foreach (Token<TokenTypes> token in escapedTokens)
             {
-                List<MachineInstruction> instructions = new List<MachineInstruction>();
+                MachineInstruction instruction = new MachineInstruction();
 
                 if (token.TokenType == TokenTypes.Instruction &&
                     token.Tokens.Count > 0 &&
@@ -67,58 +145,65 @@ namespace Pop81.Assembler
                     switch(token.Tokens[0].Value)
                     {
                         case nameof(Mnemonics.NOPE):
-                            instructions.Add(new MachineInstruction() { Opcode = OpCode.Nop_X });
+                            instruction = new MachineInstruction() { Opcode = OpCode.Nop_X };
                             break;
                         case nameof(Mnemonics.HALT):
-                            instructions.Add(new MachineInstruction() { Opcode = OpCode.Halt_X });
+                            instruction = new MachineInstruction() { Opcode = OpCode.Halt_X };
+                            break;
+
+                        case nameof(Mnemonics.SAVE):
+                            instruction = new MachineInstruction() { Opcode = OpCode.Store };
+                            break;
+                        case nameof(Mnemonics.LOAD):
+                            instruction = new MachineInstruction() { Opcode = OpCode.Load };
                             break;
 
                         case nameof(Mnemonics.MOVE):
-                            instructions = this.GenerateInstruction(2, OpCode.Move_R, OpCode.Move_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.Move_R, OpCode.Move_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.JUMP):
                             token.Tokens.Insert(1, new Token<TokenTypes>(){ TokenType = TokenTypes.Register16, Value = "pc", });
-                            instructions = this.GenerateInstruction(2, OpCode.Move_R, OpCode.Move_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.Move_R, OpCode.Move_L, token.Tokens);
                             break;
 
                         case nameof(Mnemonics.ADD):
-                            instructions = this.GenerateInstruction(2, OpCode.Add_R, OpCode.Add_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.Add_R, OpCode.Add_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.SUB):
-                            instructions = this.GenerateInstruction(2, OpCode.Substract_R, OpCode.Substract_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.Substract_R, OpCode.Substract_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.INCR):
-                            instructions = this.GenerateInstruction(2, OpCode.Add_R, OpCode.Add_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.Add_R, OpCode.Add_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.DECR):
-                            instructions = this.GenerateInstruction(2, OpCode.Substract_R, OpCode.Substract_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.Substract_R, OpCode.Substract_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.DIV):
-                            instructions = this.GenerateInstruction(2, OpCode.Divide_R, OpCode.Divide_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.Divide_R, OpCode.Divide_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.MUL):
-                            instructions = this.GenerateInstruction(2, OpCode.Multiply_R, OpCode.Multiply_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.Multiply_R, OpCode.Multiply_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.AND):
-                            instructions = this.GenerateInstruction(2, OpCode.And_R, OpCode.And_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.And_R, OpCode.And_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.OR):
-                            instructions = this.GenerateInstruction(2, OpCode.Or_R, OpCode.Or_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.Or_R, OpCode.Or_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.NOT):
-                            instructions = this.GenerateInstruction(1, OpCode.Not_R, OpCode.Not_R, token.Tokens);
+                            instruction = this.GenerateInstruction(1, OpCode.Not_R, OpCode.Not_R, token.Tokens);
                             break;
                         case nameof(Mnemonics.LSFT):
-                            instructions = this.GenerateInstruction(2, OpCode.LShift_R, OpCode.LShift_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.LShift_R, OpCode.LShift_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.RSFT):
-                            instructions = this.GenerateInstruction(2, OpCode.RShift_R, OpCode.RShift_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.RShift_R, OpCode.RShift_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.LROT):
-                            instructions = this.GenerateInstruction(2, OpCode.LRot_R, OpCode.LRot_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.LRot_R, OpCode.LRot_L, token.Tokens);
                             break;
                         case nameof(Mnemonics.RROT):
-                            instructions = this.GenerateInstruction(2, OpCode.RRot_R, OpCode.RRot_L, token.Tokens);
+                            instruction = this.GenerateInstruction(2, OpCode.RRot_R, OpCode.RRot_L, token.Tokens);
                             break;
 
                         default:
@@ -129,17 +214,22 @@ namespace Pop81.Assembler
 
                 if (this.IsVerbose)
                 {
-                    Console.WriteLine($"{FormatToDebug(token, this.Binary.Count)} | "); //{instruction.FormatToDebug()}
+                    Console.WriteLine($"{FormatToDebug(token, this.Binary.Count)} | {instruction.FormatToDebug()}");
                 }
+
+                this.Binary.Add(instruction.Byte1);
+                this.Binary.Add(instruction.Byte2);
+                this.Binary.Add(instruction.Byte3);
+                this.Binary.Add(instruction.Byte4);
 
                 addresses += 4;
             }
             #endregion
         }
 
-        public List<MachineInstruction> GenerateInstruction(int operands, OpCode registerBasedCode, OpCode literalBasedCode, List<Token<TokenTypes>> tokens)
+        public MachineInstruction GenerateInstruction(int operands, OpCode registerBasedCode, OpCode literalBasedCode, List<Token<TokenTypes>> tokens)
         {
-            List<MachineInstruction> result = new List<MachineInstruction>();
+            MachineInstruction result = new MachineInstruction();
 
             if (tokens.Count < operands + 1)
             {
@@ -147,8 +237,6 @@ namespace Pop81.Assembler
             }
             else
             {
-                //Egyszerű utasítás: csak a core utasítás
-                //Indirekt utasítás: 
                 Token<TokenTypes> sourceOperand = tokens.Last();
 
                 List<TokenTypes> registerTypeTokens = new List<TokenTypes>()
@@ -168,43 +256,30 @@ namespace Pop81.Assembler
                     TokenTypes.LiteralLabel,
                 };
 
-                MachineInstruction mainInstruction = new MachineInstruction();
-
-                if(tokens.Any(t => t.TokenType == TokenTypes.IndirectAddressing))
-                {
-
-                }
-
                 if (registerTypeTokens.Contains(sourceOperand.TokenType))
                 {
-                    mainInstruction.Opcode = registerBasedCode;
-                    mainInstruction.SourceRegister = (byte)this.GetRegister(sourceOperand);
+                    result.Opcode = registerBasedCode;
+                    result.SourceRegister = (byte)this.GetRegister(sourceOperand);
 
                     if(operands == 2)
                     {
-                        mainInstruction.TargetRegister = (byte)this.GetRegister(tokens[1]); 
+                        result.TargetRegister = (byte)this.GetRegister(tokens[1]); 
                     }
                 }
                 else if(literalTypTokens.Contains(sourceOperand.TokenType))
                 {
-                    mainInstruction.Opcode = literalBasedCode;
-                    mainInstruction.Literal = this.LiteralToShort(sourceOperand);
+                    result.Opcode = literalBasedCode;
+                    result.Literal = this.LiteralToShort(sourceOperand);
 
                     if (operands == 2)
                     {
-                        mainInstruction.TargetRegister = (byte)this.GetRegister(tokens[1]);
+                        result.TargetRegister = (byte)this.GetRegister(tokens[1]);
                     }
-                }
-                else if(sourceOperand.TokenType == TokenTypes.IndirectAddressing)
-                {
-                    //todo
                 }
                 else
                 {
                     //todo error
                 }
-
-                
             }
 
             return result;

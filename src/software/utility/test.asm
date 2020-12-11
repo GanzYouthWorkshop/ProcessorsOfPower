@@ -20,6 +20,7 @@ test:
 	NOPE
 	HALT
 	ADD  ra, [rb]
+	SUB  [ra], rb
 	SUB  ra, rb
 	DIV  ra, rb
 	MUL  ra, rb
