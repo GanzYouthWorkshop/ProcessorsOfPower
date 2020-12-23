@@ -15,17 +15,26 @@ namespace Pop81.VM.Implementation
             HandTicked
         }
 
-        public byte[] MainMemory { get; } = new byte[32 * 1034];
-        public Dictionary<RegisterCodes, Register> Registers { get; } = new Dictionary<RegisterCodes, Register>();
+        public byte[] MainMemory { get; } = new byte[32 * 1024];
+
+        public Pop81Registers Registers { get; } = new Pop81Registers();
 
         public RunMode CurrentMode { get; set; }
         public AutoResetEvent Ticker { get; } = new AutoResetEvent(false);
 
         public bool CanRun { get; set; } = true;
 
+        public VirtualMachine()
+        {
+        }
+
         public void Start()
         {
-            this.Registers[RegisterCodes.RA] = new Register();
+            new Thread(new ThreadStart(this.Runner))
+            {
+                Name = "[/] Main VM thread",
+                IsBackground = true
+            }.Start();
         }
 
         public void SetupROM(byte[] contents)
@@ -44,25 +53,24 @@ namespace Pop81.VM.Implementation
                         this.Ticker.WaitOne();
                     }
 
-                    int pp = this.Registers[RegisterCodes.PP].B16;
+                    ushort pp = this.Registers.B16[RegisterCodes.PC];
                     byte[] m = this.MainMemory;
 
                     MachineInstruction instruction = new MachineInstruction(new byte[] { m[pp++], m[pp++], m[pp++], m[pp++] });
                     this.ExecuteInstruction(instruction);
+                    this.Registers.B16[RegisterCodes.PC] = pp;
 
-                    if (this.CurrentMode == RunMode.RealTime)
+                    switch (this.CurrentMode)
                     {
-                        Thread.Sleep(10);
-                    }
-                    else if (this.CurrentMode == RunMode.Slow)
-                    {
-                        Thread.Sleep(200);
+                        case RunMode.RealTime: Thread.Sleep(10); break;
+                        case RunMode.Slow: Thread.Sleep(200); break;
+                        case RunMode.HandTicked: this.Ticker.Reset(); break;
                     }
                 }
             }
             catch(Exception ex)
             {
-
+                Console.WriteLine("Something went terribly wrong!");
             }
         }
 
@@ -70,85 +78,84 @@ namespace Pop81.VM.Implementation
         {
             switch(instruction.Opcode)
             {
-                case OpCode.Nop:
+                case OpCode.Nop_X:
                     return;
-                case OpCode.Halt:
+                case OpCode.Halt_X:
                     this.CanRun = false; break;
 
-                case OpCode.JumpRegister:
-                case OpCode.JumpLiteral:
-                case OpCode.JumpIfZero:
-                case OpCode.JumpIfNotZero:
+                case OpCode.Jump_R:
+                case OpCode.Jump_L:
+                case OpCode.JumpIfZero_R:
+                case OpCode.JumpIfZero_L:
                 case OpCode.JumpIfCarry:
                 case OpCode.JumpIfNotCarry:
                     throw new NotImplementedException(); //todo
 
-                case OpCode.Pop:
-                    this.Registers[instruction.Target].B8 = this.MainMemory[this.Registers[RegisterCodes.DSI].B16];
-                    this.Registers[RegisterCodes.DSI].B16--;
-                    break;
-                case OpCode.Push:
-                    this.Registers[RegisterCodes.DSI].B16++;
-                    this.MainMemory[this.Registers[RegisterCodes.DSI].B16] = this.Registers[instruction.Target].B8;
-                    break;
+                //case OpCode.Pop:
+                //    this.Registers[instruction.TargetRegister].B8 = this.MainMemory[this.Registers[RegisterCodes.DSI].B16];
+                //    this.Registers[RegisterCodes.DSI].B16--;
+                //    break;
+                //case OpCode.Push:
+                //    this.Registers[RegisterCodes.DSI].B16++;
+                //    this.MainMemory[this.Registers[RegisterCodes.DSI].B16] = this.Registers[instruction.TargetRegister].B8;
+                //    break;
 
 
-                case OpCode.Call:
-                    this.Registers[instruction.Target].B8 = this.MainMemory[this.Registers[RegisterCodes.DSI].B16];
-                    this.Registers[RegisterCodes.DSI].B16--;
+                //case OpCode.call:
+                //    this.Registers[instruction.TargetRegister].B8 = this.MainMemory[this.Registers[RegisterCodes.DSI].B16];
+                //    this.Registers[RegisterCodes.DSI].B16--;
+                //    break;
+                //case OpCode.Return_X:
+                //    this.Registers[RegisterCodes.DSI].B16++;
+                //    this.MainMemory[this.Registers[RegisterCodes.DSI].B16] = this.Registers[instruction.TargetRegister].B8;
+                //    break;
+
+                //case OpCode.Load:
+                //    this.Registers[RegisterCodes.MD].B8 = this.MainMemory[this.Registers[RegisterCodes.MA].B16];
+                //    break;
+                //case OpCode.Store:
+                //    this.MainMemory[this.Registers[RegisterCodes.MA].B16] = this.Registers[RegisterCodes.MD].B8;
+                //    break;
+
+                case OpCode.Move_R:
+                    this.Registers.B16[instruction.TargetRegister] = this.Registers.B16[instruction.SourceRegister];
                     break;
-                case OpCode.Return:
-                    this.Registers[RegisterCodes.DSI].B16++;
-                    this.MainMemory[this.Registers[RegisterCodes.DSI].B16] = this.Registers[instruction.Target].B8;
+                case OpCode.Move_L:
+                    this.Registers.B16[instruction.TargetRegister] = instruction.Literal;
                     break;
 
-                case OpCode.Load:
-                    this.Registers[RegisterCodes.MD].B8 = this.MainMemory[this.Registers[RegisterCodes.MA].B16];
+                case OpCode.Add_R:
+                    this.Registers.B16[instruction.TargetRegister] += this.Registers.B16[instruction.SourceRegister];
                     break;
-                case OpCode.Store:
-                    this.MainMemory[this.Registers[RegisterCodes.MA].B16] = this.Registers[RegisterCodes.MD].B8;
-                    break;
-
-                case OpCode.MoveRegister:
-                    this.Registers[instruction.Target].B8 = this.Registers[instruction.Source].B8;
-                    break;
-                case OpCode.MoveLiteral:
-                    //this.Registers[instruction.Target].B8 = instruction.Literal; //todo
+                case OpCode.Add_L:
                     throw new NotImplementedException(); //todo
+                case OpCode.Substract_R:
+                    this.Registers.B16[instruction.TargetRegister] -= this.Registers.B16[instruction.SourceRegister];
                     break;
-
-                case OpCode.AddRegister:
-                    this.Registers[instruction.Target].B8 += this.Registers[instruction.Source].B8;
-                    break;
-                case OpCode.AddLiteral:
+                case OpCode.Substract_L:
                     throw new NotImplementedException(); //todo
-                case OpCode.SubstractRegister:
-                    this.Registers[instruction.Target].B8 -= this.Registers[instruction.Source].B8;
+                case OpCode.Multiply_R:
+                    this.Registers.B16[instruction.TargetRegister] *= this.Registers.B16[instruction.SourceRegister];
                     break;
-                case OpCode.SubstractLiteral:
+                case OpCode.Multiply_L:
                     throw new NotImplementedException(); //todo
-                case OpCode.MultiplyRegister:
-                    this.Registers[instruction.Target].B8 *= this.Registers[instruction.Source].B8;
+                case OpCode.Divide_R:
+                    this.Registers.B16[instruction.TargetRegister] /= this.Registers.B16[instruction.SourceRegister];
                     break;
-                case OpCode.MultiplyLiteral:
+                case OpCode.Divide_L:
                     throw new NotImplementedException(); //todo
-                case OpCode.DivideRegister:
-                    this.Registers[instruction.Target].B8 /= this.Registers[instruction.Source].B8;
+                case OpCode.And_R:
+                    this.Registers.B16[instruction.TargetRegister] &= this.Registers.B16[instruction.SourceRegister];
                     break;
-                case OpCode.DivideLiteral:
+                case OpCode.And_L:
                     throw new NotImplementedException(); //todo
-                case OpCode.AndRegister:
-                    this.Registers[instruction.Target].B8 &= this.Registers[instruction.Source].B8;
+                case OpCode.Or_R:
+                    this.Registers.B16[instruction.TargetRegister] |= this.Registers.B16[instruction.SourceRegister];
                     break;
-                case OpCode.AndLiteral:
+                case OpCode.Or_L:
                     throw new NotImplementedException(); //todo
-                case OpCode.OrRegister:
-                    this.Registers[instruction.Target].B8 |= this.Registers[instruction.Source].B8;
-                    break;
-                case OpCode.OrLiteral:
-                    throw new NotImplementedException(); //todo
-                case OpCode.NotRegister:
-                    this.Registers[instruction.Target].B8 = (byte)~(int)this.Registers[instruction.Source].B8;
+                case OpCode.Not_R:
+                    this.Registers.B16[instruction.TargetRegister] = (ushort)~(int)this.Registers.B16[instruction.SourceRegister];
                     break;
             }
         }

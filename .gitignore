@@ -10,3 +10,9 @@ src/software/utility/Pop81.VM/obj
 src/software/utility/test.asm.bin
 src/hardware/POP81/POP81.cache
 src/hardware/POP81/vivado.log
+src/software/utility/Pop.ConsoleUtilities/bin
+src/software/utility/Pop.ConsoleUtilities/obj
+src/software/utility/Pop81.C/obj
+src/software/utility/_resources/test.asm.bin
+src/software/utility/_tests/1. increment/inc.asm.bin
+src/software/utility/Pop81.C/bin

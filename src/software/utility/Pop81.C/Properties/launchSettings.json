@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Pop81.C": {
+      "commandName": "Project",
+      "commandLineArgs": "..\\..\\..\\..\\test.c"
+    }
+  }
+}

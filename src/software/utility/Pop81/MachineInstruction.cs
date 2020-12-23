@@ -14,10 +14,8 @@ namespace Pop81
         [FieldOffset(0)] public OpCode Opcode;
 
         [FieldOffset(1)] public byte Target;
-        [FieldOffset(1)] public byte TargetRegister;
 
         [FieldOffset(2)] public byte Source;
-        [FieldOffset(2)] public byte SourceRegister;
         [FieldOffset(2)] public ushort Literal;
 
         [FieldOffset(0)] public byte Byte1;
@@ -25,15 +23,29 @@ namespace Pop81
         [FieldOffset(2)] public byte Byte3;
         [FieldOffset(3)] public byte Byte4;
 
+        public RegisterCodes SourceRegister
+        {
+            get
+            {
+                return (RegisterCodes)this.Source;
+            }
+        }
+
+        public RegisterCodes TargetRegister
+        {
+            get
+            {
+                return (RegisterCodes)this.Target;
+            }
+        }
+
         public MachineInstruction(byte[] bytes)
         {
             this.Data = 0;
             this.Opcode = 0;
             this.OpcodeByte = 0;
             this.Target = 0;
-            this.TargetRegister = 0;
             this.Source = 0;
-            this.SourceRegister = 0;
             this.Literal = 0;
             this.Byte1 = 0;
             this.Byte2 = 0;

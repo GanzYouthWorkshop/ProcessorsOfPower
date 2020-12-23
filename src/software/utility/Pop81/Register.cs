@@ -27,11 +27,34 @@ namespace Pop81
         RC = Register.GENERAL + Register.BITS16 + 0x02,
         RD = Register.GENERAL + Register.BITS16 + 0x03,
 
+        /// <summary>
+        /// PC - Program counter.
+        /// </summary>
         PC = Register.SPECIAL + Register.BITS16 + 0x00,
+
+        /// <summary>
+        /// DS - Data stack.
+        /// </summary>
         DS = Register.SPECIAL + Register.BITS16 + 0x01,
+
+        /// <summary>
+        /// CS - Code stack.
+        /// </summary>
         CS = Register.SPECIAL + Register.BITS16 + 0x02,
+
+        /// <summary>
+        /// MA - Memory address.
+        /// </summary>
         MA = Register.SPECIAL + Register.BITS16 + 0x03,
+
+        /// <summary>
+        /// MD - Memory data.
+        /// </summary>
         MD = Register.SPECIAL + Register.BITS8  + 0x04,
+
+        /// <summary>
+        /// FL - Flags.
+        /// </summary>
         FL = Register.SPECIAL + Register.BITS8  + 0x05,
     }
 
