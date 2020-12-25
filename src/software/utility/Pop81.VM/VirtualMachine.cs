@@ -78,15 +78,53 @@ namespace Pop81.VM.Implementation
         {
             switch(instruction.Opcode)
             {
+                #region NOP
                 case OpCode.Nop_X:
                     return;
+                #endregion
+                #region HALT
                 case OpCode.Halt_X:
                     this.CanRun = false; break;
+                #endregion
 
+                #region JUMP
                 case OpCode.Jump_R:
+                    this.Registers.B16[RegisterCodes.PC] = this.Registers.B16[instruction.SourceRegister];
+                    break;
                 case OpCode.Jump_L:
+                    this.Registers.B16[RegisterCodes.PC] = instruction.Literal;
+                    break;
+                #endregion
+                #region JIFZ
                 case OpCode.JumpIfZero_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.Z, true);
+                    break;
                 case OpCode.JumpIfZero_L:
+                    this.DoJump(instructin.Literal, AluFlags.Z, true);
+                    break;
+                #endregion
+                #region JINZ
+                #endregion
+                #region JIFG
+                #endregion
+                #region JING
+                #endregion
+                #region JIFC
+                #endregion
+                #region JINC
+                #endregion
+                #region JIFP
+                #endregion
+                #region JINP
+                #endregion
+                #region JIFS
+                #endregion
+                #region JINS
+                #endregion
+                #region JIFH
+                #endregion
+                #region JINH
+                #endregion
                 case OpCode.JumpIfCarry:
                 case OpCode.JumpIfNotCarry:
                     throw new NotImplementedException(); //todo
@@ -117,13 +155,15 @@ namespace Pop81.VM.Implementation
                 //    this.MainMemory[this.Registers[RegisterCodes.MA].B16] = this.Registers[RegisterCodes.MD].B8;
                 //    break;
 
+                #region MOVE
                 case OpCode.Move_R:
                     this.Registers.B16[instruction.TargetRegister] = this.Registers.B16[instruction.SourceRegister];
                     break;
                 case OpCode.Move_L:
                     this.Registers.B16[instruction.TargetRegister] = instruction.Literal;
                     break;
-
+                #endregion
+                
                 case OpCode.Add_R:
                     this.Registers.B16[instruction.TargetRegister] += this.Registers.B16[instruction.SourceRegister];
                     break;
@@ -157,6 +197,22 @@ namespace Pop81.VM.Implementation
                 case OpCode.Not_R:
                     this.Registers.B16[instruction.TargetRegister] = (ushort)~(int)this.Registers.B16[instruction.SourceRegister];
                     break;
+            }
+        }
+
+        private void DoJump(ushort literalAddress, AluFlags condition, bool accepValue)
+        {
+            if(this.Registers.GetFlag(condition) == acceptValue)
+            {
+                this.Registers.B16[RegisterCodes.PC] = literalAddress;
+            }
+        }
+
+        private void DoJump(RegisterCodes registerAddress, AluFlags condition, bool accepValue)
+        {
+            if(this.Registers.GetFlag(condition) == acceptValue)
+            {
+                this.Registers.B16[RegisterCodes.PC] = this.Registers.B16[registerAddress];
             }
         }
     }
