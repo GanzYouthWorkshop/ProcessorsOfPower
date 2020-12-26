@@ -19,7 +19,7 @@ namespace Pop81.VM.Implementation
 
         public Pop81Registers Registers { get; } = new Pop81Registers();
 
-        public RunMode CurrentMode { get; set; }
+        public RunMode CurrentMode { get; set; } = RunMode.HandTicked;
         public AutoResetEvent Ticker { get; } = new AutoResetEvent(false);
 
         public bool CanRun { get; set; } = true;
@@ -129,6 +129,13 @@ namespace Pop81.VM.Implementation
                 case OpCode.JumpIfNotCarry:
                     throw new NotImplementedException(); //todo
 
+                case OpCode.Compare_R:
+                    ushort a = this.Registers.B16[instruction.TargetRegister];
+                    ushort b = this.Registers.B16[instruction.SourceRegister];
+
+                    this.Registers.SetFlag(AluFlags.Zero, a == b);
+                    break;
+
                 //case OpCode.Pop:
                 //    this.Registers[instruction.TargetRegister].B8 = this.MainMemory[this.Registers[RegisterCodes.DSI].B16];
                 //    this.Registers[RegisterCodes.DSI].B16--;
@@ -165,10 +172,11 @@ namespace Pop81.VM.Implementation
                 #endregion
                 
                 case OpCode.Add_R:
-                    this.Registers.B16[instruction.TargetRegister] += this.Registers.B16[instruction.SourceRegister];
+                    this.ExecuteArithmeticOperation(instruction.TargetRegister, this.Registers.B16[instruction.SourceRegister], (a, b) => { return a + b; });
                     break;
                 case OpCode.Add_L:
-                    throw new NotImplementedException(); //todo
+                    this.ExecuteArithmeticOperation(instruction.TargetRegister, instruction.Literal, (a, b) => { return a + b; });
+                    break;
                 case OpCode.Substract_R:
                     this.Registers.B16[instruction.TargetRegister] -= this.Registers.B16[instruction.SourceRegister];
                     break;
@@ -200,6 +208,17 @@ namespace Pop81.VM.Implementation
             }
         }
 
+        private void ExecuteArithmeticOperation(RegisterCodes targetRegister, ushort otherValue, Func<ushort, ushort, int> predicate)
+        {
+            ushort targetValue = this.Registers.B16[targetRegister];
+
+            int result  = predicate(targetValue, otherValue);
+            this.Registers.B16[targetRegister] = (ushort)result;
+
+            this.Registers.SetFlag(AluFlags.Zero, result == 0);
+            this.Registers.SetFlag(AluFlags.Carry, result > ushort.MaxValue);
+            this.Registers.SetFlag(AluFlags.HalfCarry, result > byte.MaxValue);
+            this.Registers.SetFlag(AluFlags.Parity, result % 2 == 1);
         private void DoJump(ushort literalAddress, AluFlags condition, bool accepValue)
         {
             if(this.Registers.GetFlag(condition) == acceptValue)

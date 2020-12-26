@@ -101,5 +101,24 @@ namespace Pop81.VM
 
             this.m_InnerData = new byte[18];
         }
+
+        public void SetFlag(AluFlags flag, bool value)
+        {
+            byte mask = (byte)flag;
+            if(!value)
+            {
+                mask = (byte)~(int)mask;
+                this.B8[RegisterCodes.FL] = (byte)((int)this.B8[RegisterCodes.FL] & (int)mask);
+            }
+            else
+            {
+                this.B8[RegisterCodes.FL] = (byte)((int)this.B8[RegisterCodes.FL] | (int)mask);
+            }
+        }
+
+        public bool GetFlag(AluFlags flag)
+        {
+            return ((AluFlags)this.B8[RegisterCodes.FL]).HasFlag(flag);
+        }
     }
 }

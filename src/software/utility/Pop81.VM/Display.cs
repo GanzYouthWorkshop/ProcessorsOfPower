@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using static Pop81.VM.Implementation.VirtualMachine;
 
 namespace Pop81.VM
 {
@@ -92,7 +93,7 @@ namespace Pop81.VM
                         int address = currentDumpCursor + i;
                         byte memory = this.Machine.MainMemory[address];
 
-                        this.m_Buffer.MoveFromAnchor(0, i).Foreground(11).Draw($"0x{address:X4}").Foreground(255).Draw($" :: {memory:X2} :: {Convert.ToString(memory, 2)}");
+                        this.m_Buffer.MoveFromAnchor(0, i).Foreground(11).Draw($"0x{address:X4}").Foreground(255).Draw($" :: {memory:X2} :: {Convert.ToString(memory, 2).PadLeft(8, '0')}b");
                     }
                     #endregion
                     break;
@@ -162,8 +163,9 @@ namespace Pop81.VM
             {
                 string name = this.Machine.Registers.Registers[i].ID.ToString();
                 ushort data = this.Machine.Registers.B16[this.Machine.Registers.Registers[i].ID];
+                string format = "X" + (this.Machine.Registers.Registers[i].SizeInBytes * 2);
 
-                this.m_Buffer.MoveFromAnchor(0, i).Foreground(14).Draw($"{name.PadRight(5)}: ").Foreground(221).Draw($"{data:X4} ({data})");
+                this.m_Buffer.MoveFromAnchor(0, i).Foreground(14).Draw($"{name.PadRight(5)}: ").Foreground(221).Draw($"0x{data.ToString(format).PadLeft(4, ' ')} ({data})");
             }
 
             this.m_Buffer.Flush();
@@ -215,6 +217,10 @@ namespace Pop81.VM
                 else if (info.Key == ConsoleKey.F4)
                 {
                     this.CurrentMode = Modes.Test;
+                }
+                else if(info.Key == ConsoleKey.Spacebar && this.Machine.CurrentMode == RunMode.HandTicked)
+                {
+                    this.Machine.Ticker.Set();
                 }
             }
         }

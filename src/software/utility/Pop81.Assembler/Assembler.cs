@@ -142,7 +142,7 @@ namespace Pop81.Assembler
                     token.Tokens.Count > 0 &&
                     token.Tokens[0].TokenType == TokenTypes.Opcode)
                 {
-                    switch(token.Tokens[0].Value)
+                    switch(token.Tokens[0].Value.ToUpper())
                     {
                         case nameof(Mnemonics.NOPE):
                             instruction = new MachineInstruction() { Opcode = OpCode.Nop_X };
@@ -164,6 +164,10 @@ namespace Pop81.Assembler
                         case nameof(Mnemonics.JUMP):
                             token.Tokens.Insert(1, new Token<TokenTypes>(){ TokenType = TokenTypes.Register16, Value = "pc", });
                             instruction = this.GenerateInstruction(2, OpCode.Move_R, OpCode.Move_L, token.Tokens);
+                            break;
+
+                        case nameof(Mnemonics.COMP):
+                            instruction = GenerateInstruction(2, OpCode.Compare_R, OpCode.Compare_L, token.Tokens);
                             break;
 
                         case nameof(Mnemonics.ADD):
@@ -259,11 +263,11 @@ namespace Pop81.Assembler
                 if (registerTypeTokens.Contains(sourceOperand.TokenType))
                 {
                     result.Opcode = registerBasedCode;
-                    result.SourceRegister = (byte)this.GetRegister(sourceOperand);
+                    result.Source = (byte)this.GetRegister(sourceOperand);
 
                     if(operands == 2)
                     {
-                        result.TargetRegister = (byte)this.GetRegister(tokens[1]); 
+                        result.Target = (byte)this.GetRegister(tokens[1]); 
                     }
                 }
                 else if(literalTypTokens.Contains(sourceOperand.TokenType))
@@ -273,7 +277,7 @@ namespace Pop81.Assembler
 
                     if (operands == 2)
                     {
-                        result.TargetRegister = (byte)this.GetRegister(tokens[1]);
+                        result.Target = (byte)this.GetRegister(tokens[1]);
                     }
                 }
                 else

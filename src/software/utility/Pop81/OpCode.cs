@@ -47,6 +47,9 @@
         Move_R,
         Move_L,
 
+        Compare_R,
+        Compare_L,
+
         Add_R,
         Add_L,
         Substract_R,
