@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
+using System.Linq;
 using static Pop81.VM.Implementation.VirtualMachine;
 
 namespace Pop81.VM
@@ -53,25 +54,44 @@ namespace Pop81.VM
             this.m_Buffer.Seek(0, 1).Frame(w, h - 2, true);
 
             //Drawing footer
+#region Footer
             Dictionary<Modes, Tuple<string, string>> FooterMenu = new Dictionary<Modes, Tuple<string, string>>()
             {
-                { Modes.Vram, new Tuple<string, string>("F1", "Graphics display") },
+                { Modes.Vram, new Tuple<string, string>("F1", "Graphics") },
                 { Modes.Instructions, new Tuple<string, string>("F2", "Instructions") },
-                { Modes.MemoryDump, new Tuple<string, string>("F3", "Memory dump") },
-                { Modes.Test, new Tuple<string, string>("F4", "Test display") },
+                { Modes.MemoryDump, new Tuple<string, string>("F3", "Memory") },
+                { Modes.Test, new Tuple<string, string>("F4", "Test") },
             };
 
-            this.m_Buffer.Seek(0, h - 1).Draw("| ");
+            this.m_Buffer.Seek(0, h - 1);
             foreach (KeyValuePair< Modes, Tuple<string, string>> kvp in FooterMenu)
             {
-                int background = this.CurrentMode == kvp.Key ? 11 : 0;
-                int foreground = this.CurrentMode == kvp.Key ? 0 : 15;
+                int background = this.CurrentMode == kvp.Key ? 11 : 8;
+                int foreground = this.CurrentMode == kvp.Key ? 0 : 11;
 
-                this.m_Buffer.Color(background, foreground).Draw(kvp.Value.Item1).Color(0, 255).Draw($" - {kvp.Value.Item2} | ");
+                this.m_Buffer.Color(background, foreground).Draw($"[{kvp.Value.Item2}]").Color().Draw(' ');
+            }
+            this.m_Buffer.Color().Draw($" ");
+            Dictionary<RunMode, Tuple<string, string>> FooterMenu2 = new Dictionary<RunMode, Tuple<string, string>>()
+            {
+                { RunMode.HandTicked, new Tuple<string, string>("F5", "Step") },
+                { RunMode.RealTime, new Tuple<string, string>("F6", "Realtime") },
+                { RunMode.Slow, new Tuple<string, string>("F7", "Slow") },
+            };
+
+            foreach (KeyValuePair<RunMode, Tuple<string, string>> kvp in FooterMenu2)
+            {
+                int background = this.Machine.CurrentMode == kvp.Key ? 10 : 8;
+                int foreground = this.Machine.CurrentMode == kvp.Key ? 0 : 10;
+
+                this.m_Buffer.Color(background, foreground).Draw($"[{kvp.Value.Item2}]").Color().Draw(' ');
             }
 
+            this.m_Buffer.Color();
+            #endregion
+
             //Draw mian container
-            switch(this.CurrentMode)
+            switch (this.CurrentMode)
             {
                 case Modes.Vram:
                     #region VRAM - display a specific region of main memory either as ASCII text of colored rectangles
@@ -131,7 +151,7 @@ namespace Pop81.VM
                             int foreground = currentInstructionIndex == iteratedInstructionIndex ? 0 : 15;
 
                             string address = $"0x{iteratedInstructionIndex:X4}";
-                            string instruction = $"{inst.Byte1:X2}-{inst.Byte1:X2}-{inst.Byte1:X2}-{inst.Byte1:X2} :: {inst.Opcode}";
+                            string instruction = $"{inst.Byte1:X2}-{inst.Byte2:X2}-{inst.Byte3:X2}-{inst.Byte4:X2} :: {inst.Opcode}";
                             this.m_Buffer.MoveFromAnchor(0, i).Color(background, foreground).Draw($"{address} :: {instruction}");
                         }
                     }
@@ -159,13 +179,26 @@ namespace Pop81.VM
             this.m_Buffer.Foreground(5).Seek(83, 2).Frame(w - 85, h - 4, false);
 
             this.m_Buffer.Anchor(85, 3);
-            for (int i = 0; i < this.Machine.Registers.Registers.Count; i++)
+            int row = 0;
+            for (row = 0; row < this.Machine.Registers.Registers.Count; row++)
             {
-                string name = this.Machine.Registers.Registers[i].ID.ToString();
-                ushort data = this.Machine.Registers.B16[this.Machine.Registers.Registers[i].ID];
-                string format = "X" + (this.Machine.Registers.Registers[i].SizeInBytes * 2);
+                string name = this.Machine.Registers.Registers[row].ID.ToString();
+                ushort data = this.Machine.Registers.B16[this.Machine.Registers.Registers[row].ID];
+                string format = "X" + (this.Machine.Registers.Registers[row].SizeInBytes * 2);
 
-                this.m_Buffer.MoveFromAnchor(0, i).Foreground(14).Draw($"{name.PadRight(5)}: ").Foreground(221).Draw($"0x{data.ToString(format).PadLeft(4, ' ')} ({data})");
+                this.m_Buffer.MoveFromAnchor(0, row).Foreground(14).Draw($"{name.PadRight(5)}: ").Foreground(221).Draw($"0x{data.ToString(format).PadLeft(4, ' ')} ({data})");
+            }
+
+            row += 2;
+            int col = 0;
+            List<AluFlags> flags = Enum.GetValues(typeof(AluFlags)).Cast<AluFlags>().ToList();
+            for(int i = 0; i < flags.Count; i++)
+            {
+                char flagValue = this.Machine.Registers.GetFlag(flags[i]) ? 'X' : ' ';
+                this.m_Buffer.MoveFromAnchor(col, row).Draw($" {flags[i].ToString()[0]}  ");
+                this.m_Buffer.MoveFromAnchor(col, row + 1).Draw($"[{flagValue}] ");
+
+                col += 4;
             }
 
             this.m_Buffer.Flush();
@@ -217,6 +250,20 @@ namespace Pop81.VM
                 else if (info.Key == ConsoleKey.F4)
                 {
                     this.CurrentMode = Modes.Test;
+                }
+                else if (info.Key == ConsoleKey.F5)
+                {
+                    this.Machine.CurrentMode = RunMode.HandTicked;
+                }
+                else if (info.Key == ConsoleKey.F6)
+                {
+                    this.Machine.CurrentMode = RunMode.RealTime;
+                    this.Machine.Ticker.Set();
+                }
+                else if (info.Key == ConsoleKey.F7)
+                {
+                    this.Machine.CurrentMode = RunMode.Slow;
+                    this.Machine.Ticker.Set();
                 }
                 else if(info.Key == ConsoleKey.Spacebar && this.Machine.CurrentMode == RunMode.HandTicked)
                 {

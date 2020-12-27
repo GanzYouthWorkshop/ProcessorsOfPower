@@ -144,32 +144,47 @@ namespace Pop81.Assembler
                 {
                     switch(token.Tokens[0].Value.ToUpper())
                     {
+                        #region NOPE/HALT
                         case nameof(Mnemonics.NOPE):
                             instruction = new MachineInstruction() { Opcode = OpCode.Nop_X };
                             break;
                         case nameof(Mnemonics.HALT):
                             instruction = new MachineInstruction() { Opcode = OpCode.Halt_X };
                             break;
+                        #endregion
 
+                        #region Memory operations
                         case nameof(Mnemonics.SAVE):
                             instruction = new MachineInstruction() { Opcode = OpCode.Store };
                             break;
                         case nameof(Mnemonics.LOAD):
                             instruction = new MachineInstruction() { Opcode = OpCode.Load };
                             break;
+                        #endregion
 
+                        #region MOVE/COMP
                         case nameof(Mnemonics.MOVE):
                             instruction = this.GenerateInstruction(2, OpCode.Move_R, OpCode.Move_L, token.Tokens);
                             break;
+                        case nameof(Mnemonics.COMP):
+                            instruction = GenerateInstruction(2, OpCode.Compare_R, OpCode.Compare_L, token.Tokens);
+                            break;
+                        #endregion
+
+                        #region Jumps
                         case nameof(Mnemonics.JUMP):
                             token.Tokens.Insert(1, new Token<TokenTypes>(){ TokenType = TokenTypes.Register16, Value = "pc", });
                             instruction = this.GenerateInstruction(2, OpCode.Move_R, OpCode.Move_L, token.Tokens);
                             break;
-
-                        case nameof(Mnemonics.COMP):
-                            instruction = GenerateInstruction(2, OpCode.Compare_R, OpCode.Compare_L, token.Tokens);
+                        case nameof(Mnemonics.JIFZ):
+                            instruction = this.GenerateInstruction(1, OpCode.JumpIfZero_R, OpCode.JumpIfZero_L, token.Tokens);
                             break;
+                        case nameof(Mnemonics.JNOZ):
+                            instruction = this.GenerateInstruction(1, OpCode.JumpIfNotZero_R, OpCode.JumpIfNotZero_L, token.Tokens);
+                            break;
+                        #endregion
 
+                        #region Logical/Arithmetic operations
                         case nameof(Mnemonics.ADD):
                             instruction = this.GenerateInstruction(2, OpCode.Add_R, OpCode.Add_L, token.Tokens);
                             break;
@@ -209,6 +224,7 @@ namespace Pop81.Assembler
                         case nameof(Mnemonics.RROT):
                             instruction = this.GenerateInstruction(2, OpCode.RRot_R, OpCode.RRot_L, token.Tokens);
                             break;
+                        #endregion
 
                         default:
                             Console.WriteLine($"\u001b[38;5;9mUnknown mnemonic found: {token.Tokens[0].Value.ToUpper()}!\u001b[0m");
@@ -316,6 +332,14 @@ namespace Pop81.Assembler
             else if(literal.TokenType == TokenTypes.LiteralDecimal)
             {
                 result = Convert.ToUInt16(literal.Value, 10);
+            }
+            else if(literal.TokenType == TokenTypes.LiteralLabel)
+            {
+                string realLabel = literal.Value.Substring(1);
+                if (this.m_Labels.ContainsKey(realLabel))
+                {
+                    result = (ushort)this.m_Labels[realLabel];
+                }
             }
 
             return result;

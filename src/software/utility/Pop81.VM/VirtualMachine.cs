@@ -58,11 +58,17 @@ namespace Pop81.VM.Implementation
 
                     MachineInstruction instruction = new MachineInstruction(new byte[] { m[pp++], m[pp++], m[pp++], m[pp++] });
                     this.ExecuteInstruction(instruction);
-                    this.Registers.B16[RegisterCodes.PC] = pp;
+
+                    ushort temp = this.Registers.B16[RegisterCodes.PC];
+                    if (pp - temp == 4)
+                    {
+                        //Erre azért van szükség, hogy ha esetleg ugró utasítást használtunk volna akkor ne írjuk felül az ugrási címet!
+                        this.Registers.B16[RegisterCodes.PC] = pp;
+                    }
 
                     switch (this.CurrentMode)
                     {
-                        case RunMode.RealTime: Thread.Sleep(10); break;
+                        case RunMode.RealTime: break; //Ne cvárakozz semmire, ami a csövön kifér!
                         case RunMode.Slow: Thread.Sleep(200); break;
                         case RunMode.HandTicked: this.Ticker.Reset(); break;
                     }
@@ -97,44 +103,115 @@ namespace Pop81.VM.Implementation
                 #endregion
                 #region JIFZ
                 case OpCode.JumpIfZero_R:
-                    this.DoJump(instruction.TargetRegister, AluFlags.Z, true);
+                    this.DoJump(instruction.TargetRegister, AluFlags.Zero, true);
                     break;
                 case OpCode.JumpIfZero_L:
-                    this.DoJump(instructin.Literal, AluFlags.Z, true);
+                    this.DoJump(instruction.Literal, AluFlags.Zero, true);
                     break;
                 #endregion
                 #region JINZ
+                case OpCode.JumpIfNotZero_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.Zero, false);
+                    break;
+                case OpCode.JumpIfNotZero_L:
+                    this.DoJump(instruction.Literal, AluFlags.Zero, false);
+                    break;
                 #endregion
                 #region JIFG
+                case OpCode.JumpIfGreater_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.Greater, true);
+                    break;
+                case OpCode.JumpIfGreater_L:
+                    this.DoJump(instruction.Literal, AluFlags.Greater, true);
+                    break;
                 #endregion
                 #region JING
+                case OpCode.JumpIfNotGreater_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.Greater, false);
+                    break;
+                case OpCode.JumpIfNotGreater_L:
+                    this.DoJump(instruction.Literal, AluFlags.Greater, false);
+                    break;
                 #endregion
                 #region JIFC
+                case OpCode.JumpIfCarry_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.Carry, true);
+                    break;
+                case OpCode.JumpIfCarry_L:
+                    this.DoJump(instruction.Literal, AluFlags.Carry, true);
+                    break;
                 #endregion
                 #region JINC
+                case OpCode.JumpIfNotCarry_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.Carry, false);
+                    break;
+                case OpCode.JumpIfNotCarry_L:
+                    this.DoJump(instruction.Literal, AluFlags.Carry, false);
+                    break;
                 #endregion
                 #region JIFP
+                case OpCode.JumpIfParity_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.Parity, true);
+                    break;
+                case OpCode.JumpIfParity_L:
+                    this.DoJump(instruction.Literal, AluFlags.Parity, true);
+                    break;
                 #endregion
                 #region JINP
+                case OpCode.JumpIfNotParity_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.Parity, false);
+                    break;
+                case OpCode.JumpIfNotParity_L:
+                    this.DoJump(instruction.Literal, AluFlags.Parity, false);
+                    break;
                 #endregion
                 #region JIFS
+                case OpCode.JumpIfSign_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.Sign, true);
+                    break;
+                case OpCode.JumpIfSign_L:
+                    this.DoJump(instruction.Literal, AluFlags.Sign, true);
+                    break;
                 #endregion
                 #region JINS
+                case OpCode.JumpIfNotSign_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.Sign, false);
+                    break;
+                case OpCode.JumpIfNotSign_L:
+                    this.DoJump(instruction.Literal, AluFlags.Sign, false);
+                    break;
                 #endregion
                 #region JIFH
+                case OpCode.JumpIfHalfCarry_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.HalfCarry, true);
+                    break;
+                case OpCode.JumpIfHalfCarry_L:
+                    this.DoJump(instruction.Literal, AluFlags.HalfCarry, true);
+                    break;
                 #endregion
                 #region JINH
+                case OpCode.JumpIfNotHalfCarry_R:
+                    this.DoJump(instruction.TargetRegister, AluFlags.HalfCarry, false);
+                    break;
+                case OpCode.JumpIfNotHalfCarry_L:
+                    this.DoJump(instruction.Literal, AluFlags.HalfCarry, false);
+                    break;
                 #endregion
-                case OpCode.JumpIfCarry:
-                case OpCode.JumpIfNotCarry:
-                    throw new NotImplementedException(); //todo
 
+                #region COMP
                 case OpCode.Compare_R:
                     ushort a = this.Registers.B16[instruction.TargetRegister];
                     ushort b = this.Registers.B16[instruction.SourceRegister];
 
                     this.Registers.SetFlag(AluFlags.Zero, a == b);
                     break;
+                case OpCode.Compare_L:
+                    a = this.Registers.B16[instruction.TargetRegister];
+                    b = instruction.Literal;
+
+                    this.Registers.SetFlag(AluFlags.Zero, a == b);
+                    break;
+                #endregion
 
                 //case OpCode.Pop:
                 //    this.Registers[instruction.TargetRegister].B8 = this.MainMemory[this.Registers[RegisterCodes.DSI].B16];
@@ -170,13 +247,15 @@ namespace Pop81.VM.Implementation
                     this.Registers.B16[instruction.TargetRegister] = instruction.Literal;
                     break;
                 #endregion
-                
+
+                #region ADD
                 case OpCode.Add_R:
                     this.ExecuteArithmeticOperation(instruction.TargetRegister, this.Registers.B16[instruction.SourceRegister], (a, b) => { return a + b; });
                     break;
                 case OpCode.Add_L:
                     this.ExecuteArithmeticOperation(instruction.TargetRegister, instruction.Literal, (a, b) => { return a + b; });
                     break;
+                #endregion
                 case OpCode.Substract_R:
                     this.Registers.B16[instruction.TargetRegister] -= this.Registers.B16[instruction.SourceRegister];
                     break;
@@ -212,14 +291,16 @@ namespace Pop81.VM.Implementation
         {
             ushort targetValue = this.Registers.B16[targetRegister];
 
-            int result  = predicate(targetValue, otherValue);
+            int result = predicate(targetValue, otherValue);
             this.Registers.B16[targetRegister] = (ushort)result;
 
             this.Registers.SetFlag(AluFlags.Zero, result == 0);
             this.Registers.SetFlag(AluFlags.Carry, result > ushort.MaxValue);
             this.Registers.SetFlag(AluFlags.HalfCarry, result > byte.MaxValue);
             this.Registers.SetFlag(AluFlags.Parity, result % 2 == 1);
-        private void DoJump(ushort literalAddress, AluFlags condition, bool accepValue)
+        }
+
+        private void DoJump(ushort literalAddress, AluFlags condition, bool acceptValue)
         {
             if(this.Registers.GetFlag(condition) == acceptValue)
             {
@@ -227,7 +308,7 @@ namespace Pop81.VM.Implementation
             }
         }
 
-        private void DoJump(RegisterCodes registerAddress, AluFlags condition, bool accepValue)
+        private void DoJump(RegisterCodes registerAddress, AluFlags condition, bool acceptValue)
         {
             if(this.Registers.GetFlag(condition) == acceptValue)
             {

@@ -15,6 +15,8 @@ loop:
 	ADD  ra, rb		; ra += rb
 	SAVE $32k4, ra	; save ra to memory
 	JUMP :loop		; loops indefinitely
+	COMP ra, rc
+	JNOZ :loop
 
 test:
 	NOPE

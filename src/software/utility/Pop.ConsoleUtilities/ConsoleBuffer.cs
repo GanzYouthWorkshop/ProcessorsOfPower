@@ -91,6 +91,11 @@ namespace Pop.ConsoleUtilities
             return this.Color(this.m_CurrentBackground, color);
         }
 
+        public ConsoleBuffer Color()
+        {
+            return this.Color(0, 255);
+        }
+
         public ConsoleBuffer Color(int background, int foreground)
         {
             this.m_CurrentBackground = background;

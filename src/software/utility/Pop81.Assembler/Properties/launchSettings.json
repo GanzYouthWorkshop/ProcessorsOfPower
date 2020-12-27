@@ -2,7 +2,7 @@
   "profiles": {
     "Pop81.Assembler": {
       "commandName": "Project",
-      "commandLineArgs": "..\\..\\..\\..\\test.asm"
+      "commandLineArgs": "..\\..\\..\\..\\_resources\\test.asm"
     }
   }
 }

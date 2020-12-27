@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Pop81.VM": {
+      "commandName": "Project",
+      "commandLineArgs": "\"..\\..\\..\\..\\_tests\\1. increment\\inc.asm.bin\""
+    }
+  }
+}

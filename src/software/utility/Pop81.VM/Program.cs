@@ -38,7 +38,6 @@ namespace Pop8
             while (true)
             {
                 Thread.Sleep(1000);
-                //ConsoleKeyInfo key = Console.ReadKey();
             }
         }
     }
