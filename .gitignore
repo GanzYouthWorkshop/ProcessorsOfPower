@@ -16,3 +16,4 @@ src/software/utility/Pop81.C/obj
 src/software/utility/_resources/test.asm.bin
 src/software/utility/_tests/1. increment/inc.asm.bin
 src/software/utility/Pop81.C/bin
+src/software/utility/_tests/2.memory/mem.asm.bin

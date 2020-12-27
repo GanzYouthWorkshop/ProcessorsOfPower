@@ -53,8 +53,7 @@ namespace Pop81.VM
             //Drawing frame
             this.m_Buffer.Seek(0, 1).Frame(w, h - 2, true);
 
-            //Drawing footer
-#region Footer
+            #region Footer
             Dictionary<Modes, Tuple<string, string>> FooterMenu = new Dictionary<Modes, Tuple<string, string>>()
             {
                 { Modes.Vram, new Tuple<string, string>("F1", "Graphics") },
@@ -96,7 +95,24 @@ namespace Pop81.VM
                 case Modes.Vram:
                     #region VRAM - display a specific region of main memory either as ASCII text of colored rectangles
                     this.m_Buffer.Seek(1, 2).Foreground(255).Frame(82, 27, false);
-                    //copy memory directly to buffer
+
+                    this.m_Buffer.Seek(2, 3).Anchor();
+                    bool graphicsDisplay = this.Machine.MainMemory[VRAM_START] == 1;
+                    for(int y = 0; y < 25; y++)
+                    {
+                        for(int x = 0; x < 80; x++)
+                        {
+                            if(graphicsDisplay)
+                            {
+                                this.m_Buffer.MoveFromAnchor(x, y).Foreground(this.Machine.MainMemory[VRAM_START + 1 + x + 80 * y]).Draw('█');
+                            }
+                            else
+                            {
+                                char c = (char)this.Machine.MainMemory[VRAM_START + 1 + x + 80 * y];
+                                this.m_Buffer.MoveFromAnchor(x, y).Draw(c);
+                            }
+                        }
+                    }
                     #endregion
                     break;
                 case Modes.MemoryDump:
@@ -175,8 +191,8 @@ namespace Pop81.VM
                     break;
             }
 
-            //Draw register box
-            this.m_Buffer.Foreground(5).Seek(83, 2).Frame(w - 85, h - 4, false);
+            #region Register box
+            this.m_Buffer.Color().Foreground(5).Seek(83, 2).Frame(w - 85, h - 4, false);
 
             this.m_Buffer.Anchor(85, 3);
             int row = 0;
@@ -200,6 +216,7 @@ namespace Pop81.VM
 
                 col += 4;
             }
+            #endregion
 
             this.m_Buffer.Flush();
 

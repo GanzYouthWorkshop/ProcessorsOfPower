@@ -239,6 +239,13 @@ namespace Pop81.VM.Implementation
                 //    this.MainMemory[this.Registers[RegisterCodes.MA].B16] = this.Registers[RegisterCodes.MD].B8;
                 //    break;
 
+                case OpCode.Store:
+                    this.MainMemory[this.Registers.B16[RegisterCodes.MA]] = this.Registers.B8[RegisterCodes.MD];
+                    break;
+                case OpCode.Load:
+                     this.Registers.B8[RegisterCodes.MD] = this.MainMemory[this.Registers.B16[RegisterCodes.MA]];
+                    break;
+
                 #region MOVE
                 case OpCode.Move_R:
                     this.Registers.B16[instruction.TargetRegister] = this.Registers.B16[instruction.SourceRegister];
